@@ -2,9 +2,10 @@ import { useState, useEffect, useRef } from "react";
 import { useAudioPlayer } from "expo-audio";
 
 export const useTimer = (
-  initialTime = 20,
-  warningTime = 16,
-  extendTime = 2
+  initialTime = 0,
+  warningTime = 0,
+  extendTime = 0,
+  finalBeepCountdown = 0
 ) => {
   const [timeLeft, setTimeLeft] = useState(initialTime);
   const [isRunning, setIsRunning] = useState(false);
@@ -12,6 +13,7 @@ export const useTimer = (
   const timerRef = useRef(null);
   const lastUpdateRef = useRef(Date.now());
   const timeoutsRef = useRef([]);
+  const hasWarnedRef = useRef(false);
 
   const beepPlayer = useAudioPlayer(require("./assets/sounds/beep.mp3"));
   const buzzerPlayer = useAudioPlayer(require("./assets/sounds/buzzer.mp3"));
@@ -29,6 +31,7 @@ export const useTimer = (
     }
     timeoutsRef.current.forEach(clearTimeout);
     timeoutsRef.current = [];
+    hasWarnedRef.current = false;
   };
 
   const playSound = async (player, label) => {
@@ -66,11 +69,19 @@ export const useTimer = (
           return 0;
         }
 
-        if (newTime <= warningTime && !isWarningMode) {
+        // First warning beep when entering warning mode
+        if (newTime <= warningTime && !hasWarnedRef.current) {
           setIsWarningMode(true);
+          hasWarnedRef.current = true;
+          const beepTimeout = setTimeout(
+            () => playSound(beepPlayer, "beep"),
+            50
+          );
+          timeoutsRef.current.push(beepTimeout);
         }
 
-        if (newTime <= warningTime) {
+        // Final countdown beeps (e.g., 5, 4, 3, 2, 1)
+        if (newTime <= finalBeepCountdown && newTime > 0) {
           const beepTimeout = setTimeout(
             () => playSound(beepPlayer, "beep"),
             50
@@ -100,6 +111,9 @@ export const useTimer = (
     setTimeLeft((prev) => {
       const newTime = prev + extendTime;
       setIsWarningMode(newTime <= warningTime);
+      if (newTime > warningTime) {
+        hasWarnedRef.current = false; // allow warning beep again if extended past warning time
+      }
       return newTime;
     });
   };

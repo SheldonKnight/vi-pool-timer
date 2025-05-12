@@ -31,16 +31,14 @@ const size = (size) => {
 export default function App() {
   const [player1Name, setPlayer1Name] = useState("Player 1");
   const [player2Name, setPlayer2Name] = useState("Player 2");
-  const [initialTime, setInitialTime] = useState("10");
-  const [warningTime, setWarningTime] = useState("5");
-  const [extendTime, setExtendTime] = useState("5");
+  const [initialTime, setInitialTime] = useState("60");
+  const [warningTime, setWarningTime] = useState("30");
+  const [extendTime, setExtendTime] = useState("15");
   const [autoSwitch, setAutoSwitch] = useState(false);
+  const [finalBeepCountdown, setFinalBeepCountdown] = useState("3");
 
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [activePlayer, setActivePlayer] = useState("player1");
-  const [orientation, setOrientation] = useState(
-    height > width ? "portrait" : "landscape"
-  );
 
   const [showReport, setShowReport] = useState(false);
   const [gameStats, setGameStats] = useState({
@@ -69,6 +67,7 @@ export default function App() {
   const parsedInitialTime = parseInt(initialTime, 10);
   const parsedExtendTime = parseInt(extendTime, 10);
   const parsedWarningTime = parseInt(warningTime, 10);
+  const parsedFinalBeepCountdown = parseInt(finalBeepCountdown, 10);
 
   const {
     timeLeft,
@@ -78,7 +77,12 @@ export default function App() {
     stopTimer,
     resetTimer,
     extendTimer,
-  } = useTimer(parsedInitialTime, parsedWarningTime, parsedExtendTime);
+  } = useTimer(
+    parsedInitialTime,
+    parsedWarningTime,
+    parsedExtendTime,
+    parsedFinalBeepCountdown
+  );
 
   // Add effect to handle auto-switching
   useEffect(() => {
@@ -106,7 +110,17 @@ export default function App() {
     if (parsedWarningTime >= parsedInitialTime) {
       return Alert.alert(
         "Error",
-        "Warning time must be less than initial time."
+        "Warning/beep time must be less than initial time."
+      );
+    }
+
+    if (parsedFinalBeepCountdown <= 0 || isNaN(parsedFinalBeepCountdown)) {
+      return Alert.alert("Error", "Final countdown must be a positive number.");
+    }
+    if (parsedFinalBeepCountdown >= parsedInitialTime) {
+      return Alert.alert(
+        "Error",
+        "Final countdown must be less than initial time."
       );
     }
 
@@ -168,7 +182,7 @@ export default function App() {
         `Player 2 (${player2Name}): ${gameStats.player2Turns} turns\n` +
         `Total Game Time: ${formatTime(gameStats.totalTime)}\n\n` +
         `Initial Time: ${formatTime(parsedInitialTime)}\n` +
-        `Warning Time: ${formatTime(parsedWarningTime)}\n` +
+        `Warning/Beep Time: ${formatTime(parsedWarningTime)}\n` +
         `Extend Time: ${formatTime(parsedExtendTime)}`;
 
       await Share.share({
@@ -272,11 +286,11 @@ export default function App() {
                     ]}
                   >
                     <Text style={styles.inputLabel}>
-                      Warning Time (seconds)
+                      Warning/Beep Time (seconds)
                     </Text>
                     <TextInput
                       style={styles.input}
-                      placeholder="Enter warning time"
+                      placeholder="Enter warning/beep time"
                       placeholderTextColor="#aaa"
                       keyboardType="numeric"
                       value={warningTime}
@@ -294,6 +308,19 @@ export default function App() {
                     keyboardType="numeric"
                     value={extendTime}
                     onChangeText={setExtendTime}
+                  />
+                </View>
+                <View style={styles.inputGroup}>
+                  <Text style={styles.inputLabel}>
+                    Final Countdown Start (seconds)
+                  </Text>
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Enter countdown start time"
+                    placeholderTextColor="#aaa"
+                    keyboardType="numeric"
+                    value={finalBeepCountdown}
+                    onChangeText={setFinalBeepCountdown}
                   />
                 </View>
 
@@ -339,7 +366,7 @@ export default function App() {
                   </Text>
                 </View>
                 <View style={styles.infoItem}>
-                  <Text style={styles.infoLabel}>⚠️ Warning</Text>
+                  <Text style={styles.infoLabel}>⚠️ Warning/Beep</Text>
                   <Text style={styles.infoValue}>
                     {formatTime(parsedWarningTime)}
                   </Text>
